@@ -1,7 +1,7 @@
 module gcm_mult():
 
   //----------------------------------------------------------------
-  // Gaolis multiplication functions for Inverse MixColumn.
+  // Gaolis multiplication functions.
   //----------------------------------------------------------------
   function [7 : 0] gm2(input [7 : 0] op);
     begin
