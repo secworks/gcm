@@ -51,34 +51,40 @@ module gcm(
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
   //----------------------------------------------------------------
-  localparam ADDR_NAME0       = 8'h00;
-  localparam ADDR_NAME1       = 8'h01;
-  localparam ADDR_VERSION     = 8'h02;
+  localparam ADDR_NAME0          = 8'h00;
+  localparam ADDR_NAME1          = 8'h01;
+  localparam ADDR_VERSION        = 8'h02;
 
-  localparam ADDR_CTRL        = 8'h08;
-  localparam CTRL_INIT_BIT    = 0;
-  localparam CTRL_NEXT_BIT    = 1;
+  localparam ADDR_CTRL           = 8'h08;
+  localparam CTRL_INIT_BIT       = 0;
+  localparam CTRL_NEXT_BIT       = 1
+  localparam CTRL_ENCDEC_BIT     = 2;
 
-  localparam ADDR_CONFIG      = 8'h09;
+  localparam ADDR_STATUS         = 8'h0a;
+  localparam STATUS_READY_BIT    = 0;
+  localparam STATUS_VALID_BIT    = 1;
+  localparam STATUS_CORRECT      = 2;
 
-  localparam ADDR_STATUS      = 8'h0a;
-  localparam STATUS_READY_BIT = 0;
-  localparam STATUS_VALID_BIT = 1;
+  localparam ADDR_CONFIG         = 8'h0a;
+  localparam CONFIG_KEYLEN_BIT   = 0;
+  localparam CONFIG_TAGLEN_START = 4;
+  localparam CONFIG_TAGLEN_END   = 5;
 
-  localparam ADDR_KEY0        = 8'h10;
-  localparam ADDR_KEY7        = 8'h17;
+  localparam ADDR_KEY0           = 8'h10;
+  localparam ADDR_KEY7           = 8'h17;
 
-  localparam ADDR_BLOCK0      = 8'h20;
-  localparam ADDR_BLOCK3      = 8'h23;
+  localparam ADDR_BLOCK0         = 8'h20;
+  localparam ADDR_BLOCK3         = 8'h23;
 
-  localparam ADDR_MAC0        = 8'h30;
-  localparam ADDR_MAC1        = 8'h31;
-  localparam ADDR_MAC2        = 8'h32;
-  localparam ADDR_MAC3        = 8'h33;
+  localparam ADDR_CIPHERTEXTC0   = 8'h30;
+  localparam ADDR_CIPHERTEXTC3   = 8'h33;
 
-  localparam CORE_NAME0       = 32'h67636d20 // "gcm "
-  localparam CORE_NAME1       = 32'h31323820; // "    "
-  localparam CORE_VERSION     = 32'h302e3031; // "0.01"
+  localparam ADDR_TAG0           = 8'h40;
+  localparam ADDR_TAG3           = 8'h43;
+
+  localparam CORE_NAME0          = 32'h67636d2d; // "gcm-"
+  localparam CORE_NAME1          = 32'h61657320; // "aes "
+  localparam CORE_VERSION        = 32'h302e3032; // "0.02"
 
 
   //----------------------------------------------------------------
