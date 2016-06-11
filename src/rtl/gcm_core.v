@@ -37,26 +37,27 @@
 //======================================================================
 
 module gcm_core(
-                // Clock and reset.
                 input wire            clk,
                 input wire            reset_n,
 
-                input wire            key_size,
                 input wire [255 : 0]  key,
 
                 input wire            init,
                 input wire            next,
+
                 input wire            enc_dec,
+                input wire            key_size,
+                input wire [1 : 0]    icv_size,
 
-                input wire [127 : 0]  block,
-                output wire [127 : 0] ciphertext,
-                output wire [127 : 0] tag
+                output wire           ready,
+                output wire           valid,
+                output wire           icv_correct,
+
+                input wire [127 : 0]  block_in,
+                output wire [127 : 0] block_out,
+                input wire [127 : 0]  icv_in,
+                output wire [127 : 0] icv_out
                );
-
-  //----------------------------------------------------------------
-  // Internal constant and parameter definitions.
-  //----------------------------------------------------------------
-
 
   //----------------------------------------------------------------
   // Registers including update variables and write enable.
@@ -69,13 +70,13 @@ module gcm_core(
   reg [31 : 0]   tmp_read_data;
   reg            tmp_error;
 
-  wire           core_encdec;
-  wire           core_ready;
-  wire [127 : 0] core_block;
-  wire [255 : 0] core_key;
-  wire           core_keylen;
-  wire [127 : 0] core_result;
-  wire           core_valid;
+  wire           aes_encdec;
+  wire           aes_ready;
+  wire [127 : 0] aes_block;
+  wire [255 : 0] aes_key;
+  wire           aes_keylen;
+  wire [127 : 0] aes_result;
+  wire           aes_valid;
 
 
   //----------------------------------------------------------------
@@ -86,23 +87,22 @@ module gcm_core(
   //----------------------------------------------------------------
   // AES core instantiation.
   //----------------------------------------------------------------
-//  aes_core core(
-//                .clk(clk),
-//                .reset_n(reset_n),
-//
-//                .encdec(core_encdec),
-//                .init(core_init),
-//                .next(core_next),
-//                .ready(core_ready),
-//
-//                .key(core_key),
-//                .keylen(core_keylen),
-//
-//                .block(core_block),
-//                .result(core_result),
-//                .result_valid(core_valid)
-//               );
-//
+  aes_core core(
+                .clk(clk),
+                .reset_n(reset_n),
+
+                .encdec(aes_encdec),
+                .init(aes_init),
+                .next(aes_next),
+                .ready(aes_ready),
+
+                .key(aes_key),
+                .keylen(aes_keylen),
+
+                .block(aes_block),
+                .result(aes_result),
+                .result_valid(aes_valid)
+               );
 
 
   //----------------------------------------------------------------

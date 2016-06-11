@@ -36,9 +36,9 @@
 #
 #===================================================================
 
-AES_SRC=../../aes/src/rtl/*.v
+AES_SRC=../../aes/src/rtl/aes_core.v ../../aes/src/rtl/aes_decipher_block.v ../../aes/src/rtl/aes_encipher_block.v ../../aes/src/rtl/aes_inv_sbox.v ../../aes/src/rtl/aes_key_mem.v ../../aes/src/rtl/aes_sbox.v
 
-CORE_SRC=../src/rtl/gcm_core.v
+CORE_SRC=../src/rtl/gcm_core.v $(AES_SRC)
 
 TOP_SRC=../src/rtl/gcm.v $(CORE_SRC)
 TOP_TB_SRC=../src/tb/tb_gcm.v
