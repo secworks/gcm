@@ -65,10 +65,10 @@ module gcm(
   localparam STATUS_CORRECT_ICV  = 2;
 
   localparam ADDR_CONFIG         = 8'h0a;
-  localparam CTRL_ENCDEC_BIT     = 0;
+  localparam CONFIG_ENCDEC_BIT   = 0;
   localparam CONFIG_KEYLEN_BIT   = 1;
-  localparam CONFIG_TAGLEN_START = 4;
-  localparam CONFIG_TAGLEN_END   = 5;
+  localparam CONFIG_ICVLEN_START = 4;
+  localparam CONFIG_ICVLEN_END   = 5;
 
   localparam ADDR_KEY0           = 8'h10;
   localparam ADDR_KEY7           = 8'h17;
@@ -93,13 +93,27 @@ module gcm(
   reg next_reg;
   reg next_new;
 
+  reg encdec_reg;
+  reg encdec_new;
+  reg encdec_we;
+
+  reg keylen_reg;
+  reg keylen_new;
+  reg keylen_we;
+
+  reg [1 : 0] icvlen_reg;
+  reg [1 : 0] icvlen_new;
+  reg         icvlen_we;
+
+
   reg [31 : 0] block_reg [0 : 3];
   reg          block_we;
 
   reg [31 : 0] key_reg [0 : 7];
   reg          key_we;
 
-  reg [127 : 0] tag_reg;
+  reg [127 : 0] icv_reg;
+
   reg           valid_reg;
   reg           ready_reg;
 
@@ -118,6 +132,11 @@ module gcm(
   wire [127 : 0] core_result;
   wire           core_valid;
 
+  reg [1 : 0]    block_address;
+  reg [1 : 0]    icv_address;
+  reg [2 : 0]    key_address;
+
+  reg            config_we;
 
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
@@ -178,7 +197,8 @@ module gcm(
           next_reg   <= 0;
           encdec_reg <= 0;
           keylen_reg <= 0;
-          mac_reg    <= 128'h0;
+          icvlen_reg <= 2'h0;
+          icv_reg    <= 128'h0;
           valid_reg  <= 0;
           ready_reg  <= 0;
         end
@@ -186,14 +206,14 @@ module gcm(
         begin
           ready_reg  <= core_ready;
           valid_reg  <= core_valid;
-          result_reg <= core_result;
           init_reg   <= init_new;
           next_reg   <= next_new;
 
           if (config_we)
             begin
-              encdec_reg <= write_data[CTRL_ENCDEC_BIT];
-              keylen_reg <= write_data[CTRL_KEYLEN_BIT];
+              encdec_reg <= write_data[CONFIG_ENCDEC_BIT];
+              keylen_reg <= write_data[CONFIG_KEYLEN_BIT];
+              icvlen_reg <= write_data[CONFIG_ICVLEN_END : CONFIG_ICVLEN_START];
             end
 
           if (block_we)
@@ -221,7 +241,7 @@ module gcm(
       tmp_error      = 0;
 
       key_address    = 3'h0;
-      block__address = 2'h0;
+      block_address  = 2'h0;
 
       if (cs)
         begin
@@ -245,21 +265,22 @@ module gcm(
 
           else
             begin
-              case (address)
-                ADDR_NAME0:   tmp_read_data = CORE_NAME0;
-                ADDR_NAME1:   tmp_read_data = CORE_NAME1;
-                ADDR_VERSION: tmp_read_data = CORE_VERSION;
-                ADDR_CTRL:    tmp_read_data = {28'h0, keylen_reg, encdec_reg, next_reg, init_reg};
-                ADDR_STATUS:  tmp_read_data = {30'h0, valid_reg, ready_reg};
-                ADDR_RESULT0: tmp_read_data = result_reg[127 : 96];
-                ADDR_RESULT1: tmp_read_data = result_reg[95 : 64];
-                ADDR_RESULT2: tmp_read_data = result_reg[63 : 32];
-                ADDR_RESULT3: tmp_read_data = result_reg[31 : 0];
+              if (address == ADDR_NAME0)
+                tmp_read_data = CORE_NAME0;
 
-                default:
-                  begin
-                  end
-              endcase // case (address)
+              if (address == ADDR_NAME1)
+                tmp_read_data = CORE_NAME1;
+
+              if (address == ADDR_VERSION)
+                tmp_read_data = CORE_VERSION;
+
+              if (address == ADDR_CTRL)
+                tmp_read_data = {30'h0, next_reg, init_reg};
+
+              if (address == ADDR_STATUS)
+                tmp_read_data = {30'h0, valid_reg, ready_reg};
+
+              // digest_reg[(15 - (address - ADDR_DIGEST0)) * 32 +: 32];
             end
         end
     end // addr_decoder
