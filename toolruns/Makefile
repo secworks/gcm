@@ -39,7 +39,6 @@
 AES_SRC=../../aes/src/rtl/*.v
 
 CORE_SRC=../src/rtl/gcm_core.v
-CORE_TB_SRC=../src/tb/tb_gcm_core.v
 
 TOP_SRC=../src/rtl/gcm.v $(CORE_SRC)
 TOP_TB_SRC=../src/tb/tb_gcm.v
@@ -48,27 +47,16 @@ CC=iverilog
 LINT=verilator
 
 
-all: top.sim core.sim
+all: top.sim
 
 
 top.sim: $(TOP_TB_SRC) $(TOP_SRC)
 	$(CC) -o top.sim $(TOP_TB_SRC) $(TOP_SRC)
 
 
-core.sim: $(CORE_TB_SRC) $(CORE_SRC)
-	$(CC) -o core.sim $(CORE_SRC) $(CORE_TB_SRC)
-
-
 sim-top: top.sim
 	./top.sim
 
-
-sim-core: core.sim
-	./core.sim
-
-
-sim-wmem: wmem.sim
-	./wmem.sim
 
 lint:
 	verilator --lint-only  -Wall -Wno-fatal -Wno-DECLFILENAME $(TOP_SRC)
@@ -80,7 +68,6 @@ debug:
 
 clean:
 	rm -f top.sim
-	rm -f core.sim
 
 
 help:
