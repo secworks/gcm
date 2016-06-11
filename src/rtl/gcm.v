@@ -68,8 +68,8 @@ module gcm(
   localparam ADDR_CONFIG         = 8'h0a;
   localparam CONFIG_ENCDEC_BIT   = 0;
   localparam CONFIG_KEYLEN_BIT   = 1;
-  localparam CONFIG_ICVLEN_START = 4;
-  localparam CONFIG_ICVLEN_END   = 5;
+  localparam CONFIG_TAGLEN_START = 4;
+  localparam CONFIG_TAGLEN_END   = 5;
 
   localparam ADDR_KEY0           = 8'h10;
   localparam ADDR_KEY7           = 8'h17;
@@ -83,9 +83,9 @@ module gcm(
   localparam ADDR_NONCE3         = 8'h33;
   localparam NONCE_WORDS         = 4;
 
-  localparam ADDR_ICV0           = 8'h40;
-  localparam ADDR_ICV3           = 8'h43;
-  localparam ICV_WORDS           = 4;
+  localparam ADDR_TAG0           = 8'h40;
+  localparam ADDR_TAG3           = 8'h43;
+  localparam TAG_WORDS           = 4;
 
   localparam WSIZE               = 32;
 
@@ -112,7 +112,7 @@ module gcm(
 
   reg          valid_reg;
   reg          ready_reg;
-  reg          icv_correct_reg;
+  reg          tag_correct_reg;
 
   reg [31 : 0] block_reg [0 : 3];
   reg          block_we;
@@ -126,17 +126,17 @@ module gcm(
   reg          key_we;
   reg [2 : 0]  key_address;
 
-  reg [1 : 0]  icvlen_reg;
-  reg [1 : 0]  icvlen_new;
-  reg          icvlen_we;
+  reg [1 : 0]  taglen_reg;
+  reg [1 : 0]  taglen_new;
+  reg          taglen_we;
 
   reg [31 : 0] nonce_reg [0 : 3];
   reg          nonce_we;
   reg [1 : 0]  nonce_address;
 
-  reg [31 : 0] icv_reg [0 : 3];
-  reg          icv_we;
-  reg [1 : 0]  icv_address;
+  reg [31 : 0] tag_reg [0 : 3];
+  reg          tag_we;
+  reg [1 : 0]  tag_address;
 
 
   //----------------------------------------------------------------
@@ -151,8 +151,8 @@ module gcm(
   wire [127 : 0] core_block_in;
   wire [127 : 0] core_block_out;
 
-  wire [127 : 0] core_icv_in;
-  wire [127 : 0] core_icv_out;
+  wire [127 : 0] core_tag_in;
+  wire [127 : 0] core_tag_out;
 
   wire [255 : 0] core_key;
   wire [127 : 0] core_nonce;
@@ -187,18 +187,18 @@ module gcm(
 
                 .enc_dec(encdec_reg),
                 .key_size(kelen_reg),
-                .icv_size(icvlen_reg),
+                .tag_size(taglen_reg),
 
                 .ready(core_ready),
                 .valid(core_redy),
-                .icv_correct(core_icv_correct),
+                .tag_correct(core_tag_correct),
 
                 .key(core_key),
                 .nonce(core_nonce),
                 .block_in(core_block_in),
                 .block_out(core_block_out),
-                .icv_in(core_icv_in),
-                .icv_out(core_icv_out)
+                .tag_in(core_tag_in),
+                .tag_out(core_tag_out)
                );
 
 
@@ -219,7 +219,7 @@ module gcm(
             begin
               block_reg[i] <= 32'h0;
               nonce_reg[i] <= 32'h0;
-              icv_reg[i]   <= 32'h0;
+              tag_reg[i]   <= 32'h0;
             end
 
           for (i = 0 ; i < 8 ; i = i + 1)
@@ -230,7 +230,7 @@ module gcm(
           done_reg   <= 0;
           encdec_reg <= 0;
           keylen_reg <= 0;
-          icvlen_reg <= 2'h0;
+          taglen_reg <= 2'h0;
           valid_reg  <= 0;
           ready_reg  <= 0;
         end
@@ -246,7 +246,7 @@ module gcm(
             begin
               encdec_reg <= write_data[CONFIG_ENCDEC_BIT];
               keylen_reg <= write_data[CONFIG_KEYLEN_BIT];
-              icvlen_reg <= write_data[CONFIG_ICVLEN_END : CONFIG_ICVLEN_START];
+              taglen_reg <= write_data[CONFIG_TAGLEN_END : CONFIG_TAGLEN_START];
             end
 
           if (block_we)
@@ -258,8 +258,8 @@ module gcm(
           if (nonce_we)
             key_reg[nonce_address] <= write_data;
 
-          if (icv_we)
-            key_reg[icv_address] <= write_data;
+          if (tag_we)
+            key_reg[tag_address] <= write_data;
         end
     end // reg_update
 
@@ -278,14 +278,14 @@ module gcm(
       key_we         = 0;
       block_we       = 0;
       nonce_we       = 0;
-      icv_we         = 0;
+      tag_we         = 0;
       tmp_read_data  = 32'h0;
       tmp_error      = 0;
 
       key_address    = address[2 : 0];
       block_address  = address[1 : 0];
       nonce_address  = address[1 : 0];
-      icv_address    = address[1 : 0];
+      tag_address    = address[1 : 0];
 
       if (cs)
         begin
@@ -310,8 +310,8 @@ module gcm(
               if ((address >= ADDR_NONCE0) && (address <= ADDR_NONCE3))
                 nonce_we = 1;
 
-              if ((address >= ADDR_ICV0) && (address <= ADDR_ICV3))
-                icv_we = 1;
+              if ((address >= ADDR_TAG0) && (address <= ADDR_TAG3))
+                tag_we = 1;
             end // if (we)
 
           else
@@ -343,8 +343,8 @@ module gcm(
               if ((address >= ADDR_NONCE0) && (address <= ADDR_NONCE3))
                 tmp_read_data = block_reg[nonce_address];
 
-              if ((address >= ADDR_ICV0) && (address <= ADDR_ICV3))
-                tmp_read_data = block_reg[icv_address];
+              if ((address >= ADDR_TAG0) && (address <= ADDR_TAG3))
+                tmp_read_data = block_reg[tag_address];
             end
         end
     end // addr_decoder

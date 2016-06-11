@@ -46,23 +46,33 @@ module gcm_core(
 
                 input wire            enc_dec,
                 input wire            key_size,
-                input wire [1 : 0]    icv_size,
+                input wire [1 : 0]    tag_size,
 
                 output wire           ready,
                 output wire           valid,
-                output wire           icv_correct,
+                output wire           tag_correct,
 
                 input wire [255 : 0]  key,
                 input wire [127 : 0]  nonce,
                 input wire [127 : 0]  block_in,
                 output wire [127 : 0] block_out,
-                input wire [127 : 0]  icv_in,
-                output wire [127 : 0] icv_out
+                input wire [127 : 0]  tag_in,
+                output wire [127 : 0] tag_out
                );
+
+  //----------------------------------------------------------------
+  // Internal constant and parameter definitions.
+  //----------------------------------------------------------------
+  localparam GCM_CTRL_IDLE = 3'h0;
+  localparam GCM_CTRL_INIT = 3'h1;
+
 
   //----------------------------------------------------------------
   // Registers including update variables and write enable.
   //----------------------------------------------------------------
+  reg [2 : 0] gcm_ctrl_reg;
+  reg [2 : 0] gcm_ctrl_new;
+  reg         gcm_ctrl_we;
 
 
   //----------------------------------------------------------------
@@ -83,6 +93,7 @@ module gcm_core(
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
   //----------------------------------------------------------------
+  assign aes_encdec = 1;
 
 
   //----------------------------------------------------------------
@@ -119,16 +130,26 @@ module gcm_core(
 
       if (!reset_n)
         begin
-
+          gcm_ctrl_reg <= GCM_CTRL_IDLE;
         end
       else
         begin
+          if (gcm_ctrl_we)
+            gcm_ctrl_reg <= gcm_ctrl_new;
 
         end
     end // reg_update
 
 
-endmodule // aes
+  //----------------------------------------------------------------
+  // gcm_core_ctrl_fsm
+  //----------------------------------------------------------------
+  always @*
+    begin : gcm_core_ctrl_fsm
+
+    end // gcm_core_ctrl_fsm
+
+endmodule // gcm_core
 
 //======================================================================
 // EOF gcm_core.v
