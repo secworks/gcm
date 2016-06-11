@@ -58,7 +58,6 @@ module gcm(
   localparam ADDR_CTRL           = 8'h08;
   localparam CTRL_INIT_BIT       = 0;
   localparam CTRL_NEXT_BIT       = 1
-  localparam CTRL_ENCDEC_BIT     = 2;
 
   localparam ADDR_STATUS         = 8'h0a;
   localparam STATUS_READY_BIT    = 0;
@@ -66,7 +65,8 @@ module gcm(
   localparam STATUS_CORRECT      = 2;
 
   localparam ADDR_CONFIG         = 8'h0a;
-  localparam CONFIG_KEYLEN_BIT   = 0;
+  localparam CTRL_ENCDEC_BIT     = 0;
+  localparam CONFIG_KEYLEN_BIT   = 1;
   localparam CONFIG_TAGLEN_START = 4;
   localparam CONFIG_TAGLEN_END   = 5;
 
@@ -76,11 +76,8 @@ module gcm(
   localparam ADDR_BLOCK0         = 8'h20;
   localparam ADDR_BLOCK3         = 8'h23;
 
-  localparam ADDR_CIPHERTEXTC0   = 8'h30;
-  localparam ADDR_CIPHERTEXTC3   = 8'h33;
-
-  localparam ADDR_TAG0           = 8'h40;
-  localparam ADDR_TAG3           = 8'h43;
+  localparam ADDR_ICV0           = 8'h30;
+  localparam ADDR_ICV3           = 8'h33;
 
   localparam CORE_NAME0          = 32'h67636d2d; // "gcm-"
   localparam CORE_NAME1          = 32'h61657320; // "aes "
@@ -230,33 +227,25 @@ module gcm(
         begin
           if (we)
             begin
+              if (address = ADDR_CTRL)
+                  begin
+                    init_new = write_data[CTRL_INIT_BIT];
+                    next_new = write_data[CTRL_NEXT_BIT];
+                  end
+
               if ((address >= ADDR_KEY0) && (address <= ADDR_KEY7))
                 key_we = 1;
 
               if ((address >= ADDR_BLOCK0) && (address <= ADDR_BLOCK3))
                 block_we = 1;
 
-              case (address)
-                // Write operations.
-                ADDR_CTRL:
-                  begin
-                    init_new = write_data[CTRL_INIT_BIT];
-                    next_new = write_data[CTRL_NEXT_BIT];
-                  end
-
-                ADDR_CONFIG:
-                  config_we = 1;
-
-                default:
-                  begin
-                  end
-              endcase // case (address)
+              if (address = ADDR_CONFIG)
+                config_we = 1;
             end // if (we)
 
           else
             begin
               case (address)
-                // Read operations.
                 ADDR_NAME0:   tmp_read_data = CORE_NAME0;
                 ADDR_NAME1:   tmp_read_data = CORE_NAME1;
                 ADDR_VERSION: tmp_read_data = CORE_VERSION;
