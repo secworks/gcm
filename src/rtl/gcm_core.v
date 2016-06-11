@@ -86,22 +86,23 @@ module gcm_core(
   //----------------------------------------------------------------
   // AES core instantiation.
   //----------------------------------------------------------------
-  aes_core core(
-                .clk(clk),
-                .reset_n(reset_n),
-
-                .encdec(core_encdec),
-                .init(core_init),
-                .next(core_next),
-                .ready(core_ready),
-
-                .key(core_key),
-                .keylen(core_keylen),
-
-                .block(core_block),
-                .result(core_result),
-                .result_valid(core_valid)
-               );
+//  aes_core core(
+//                .clk(clk),
+//                .reset_n(reset_n),
+//
+//                .encdec(core_encdec),
+//                .init(core_init),
+//                .next(core_next),
+//                .ready(core_ready),
+//
+//                .key(core_key),
+//                .keylen(core_keylen),
+//
+//                .block(core_block),
+//                .result(core_result),
+//                .result_valid(core_valid)
+//               );
+//
 
 
   //----------------------------------------------------------------

@@ -57,12 +57,12 @@ module gcm(
 
   localparam ADDR_CTRL           = 8'h08;
   localparam CTRL_INIT_BIT       = 0;
-  localparam CTRL_NEXT_BIT       = 1
+  localparam CTRL_NEXT_BIT       = 1;
 
-  localparam ADDR_STATUS         = 8'h0a;
+  localparam ADDR_STATUS         = 8'h09;
   localparam STATUS_READY_BIT    = 0;
   localparam STATUS_VALID_BIT    = 1;
-  localparam STATUS_CORRECT      = 2;
+  localparam STATUS_CORRECT_ICV  = 2;
 
   localparam ADDR_CONFIG         = 8'h0a;
   localparam CTRL_ENCDEC_BIT     = 0;
@@ -135,25 +135,25 @@ module gcm(
 
 
   //----------------------------------------------------------------
-  // AES core instantiation.
+  // GCM core instantiation.
   //----------------------------------------------------------------
-  aes_core core(
-                .clk(clk),
-                .reset_n(reset_n),
-
-                .encdec(core_encdec),
-                .init(core_init),
-                .next(core_next),
-                .ready(core_ready),
-
-                .key(core_key),
-                .keylen(core_keylen),
-
-                .block(core_block),
-                .result(core_result),
-                .result_valid(core_valid)
-               );
-
+//  gcm_core core(
+//                .clk(clk),
+//                .reset_n(reset_n),
+//
+//                .encdec(core_encdec),
+//                .init(core_init),
+//                .next(core_next),
+//                .ready(core_ready),
+//
+//                .key(core_key),
+//                .keylen(core_keylen),
+//
+//                .block(core_block),
+//                .result(core_result),
+//                .result_valid(core_valid)
+//               );
+//
 
   //----------------------------------------------------------------
   // reg_update
@@ -227,7 +227,7 @@ module gcm(
         begin
           if (we)
             begin
-              if (address = ADDR_CTRL)
+              if (address == ADDR_CTRL)
                   begin
                     init_new = write_data[CTRL_INIT_BIT];
                     next_new = write_data[CTRL_NEXT_BIT];
@@ -239,7 +239,7 @@ module gcm(
               if ((address >= ADDR_BLOCK0) && (address <= ADDR_BLOCK3))
                 block_we = 1;
 
-              if (address = ADDR_CONFIG)
+              if (address == ADDR_CONFIG)
                 config_we = 1;
             end // if (we)
 
