@@ -58,6 +58,7 @@ module gcm(
   localparam ADDR_CTRL           = 8'h08;
   localparam CTRL_INIT_BIT       = 0;
   localparam CTRL_NEXT_BIT       = 1;
+  localparam CTRL_DONE_BIT       = 2;
 
   localparam ADDR_STATUS         = 8'h09;
   localparam STATUS_READY_BIT    = 0;
@@ -101,6 +102,9 @@ module gcm(
 
   reg          next_reg;
   reg          next_new;
+
+  reg          done_reg;
+  reg          done_new;
 
   reg          encdec_reg;
   reg          encdec_new;
@@ -151,11 +155,13 @@ module gcm(
   wire [127 : 0] core_icv_out;
 
   wire [255 : 0] core_key;
+  wire [127 : 0] core_nonce;
   wire           core_keylen;
   wire [127 : 0] core_result;
   wire           core_valid;
 
   reg            config_we;
+
 
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
@@ -174,15 +180,21 @@ module gcm(
   gcm_core core(
                 .clk(clk),
                 .reset_n(reset_n),
-                .key(core_key),
+
                 .init(init_reg),
                 .next(next_reg),
+                .done(done_reg),
+
                 .enc_dec(encdec_reg),
                 .key_size(kelen_reg),
                 .icv_size(icvlen_reg),
+
                 .ready(core_ready),
                 .valid(core_redy),
                 .icv_correct(core_icv_correct),
+
+                .key(core_key),
+                .nonce(core_nonce),
                 .block_in(core_block_in),
                 .block_out(core_block_out),
                 .icv_in(core_icv_in),
@@ -207,7 +219,7 @@ module gcm(
             begin
               block_reg[i] <= 32'h0;
               nonce_reg[i] <= 32'h0;
-              icv_reg[i] <= 32'h0;
+              icv_reg[i]   <= 32'h0;
             end
 
           for (i = 0 ; i < 8 ; i = i + 1)
@@ -215,6 +227,7 @@ module gcm(
 
           init_reg   <= 0;
           next_reg   <= 0;
+          done_reg   <= 0;
           encdec_reg <= 0;
           keylen_reg <= 0;
           icvlen_reg <= 2'h0;
@@ -227,6 +240,7 @@ module gcm(
           valid_reg <= core_valid;
           init_reg  <= init_new;
           next_reg  <= next_new;
+          done_reg  <= done_new;
 
           if (config_we)
             begin
@@ -259,6 +273,7 @@ module gcm(
     begin : api
       init_new       = 0;
       next_new       = 0;
+      done_new       = 0;
       config_we      = 0;
       key_we         = 0;
       block_we       = 0;
@@ -280,6 +295,7 @@ module gcm(
                   begin
                     init_new = write_data[CTRL_INIT_BIT];
                     next_new = write_data[CTRL_NEXT_BIT];
+                    done_new = write_data[CTRL_DONE_BIT];
                   end
 
               if (address == ADDR_CONFIG)

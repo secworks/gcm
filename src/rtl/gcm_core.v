@@ -40,10 +40,9 @@ module gcm_core(
                 input wire            clk,
                 input wire            reset_n,
 
-                input wire [255 : 0]  key,
-
                 input wire            init,
                 input wire            next,
+                input wire            done,
 
                 input wire            enc_dec,
                 input wire            key_size,
@@ -53,6 +52,8 @@ module gcm_core(
                 output wire           valid,
                 output wire           icv_correct,
 
+                input wire [255 : 0]  key,
+                input wire [127 : 0]  nonce,
                 input wire [127 : 0]  block_in,
                 output wire [127 : 0] block_out,
                 input wire [127 : 0]  icv_in,
