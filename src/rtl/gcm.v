@@ -72,12 +72,21 @@ module gcm(
 
   localparam ADDR_KEY0           = 8'h10;
   localparam ADDR_KEY7           = 8'h17;
+  localparam KEY_WORDS           = 8;
 
   localparam ADDR_BLOCK0         = 8'h20;
   localparam ADDR_BLOCK3         = 8'h23;
+  localparam BLOCK_WORDS         = 4;
 
-  localparam ADDR_ICV0           = 8'h30;
-  localparam ADDR_ICV3           = 8'h33;
+  localparam ADDR_NONCE0         = 8'h30;
+  localparam ADDR_NONCE3         = 8'h33;
+  localparam NONCE_WORDS         = 4;
+
+  localparam ADDR_ICV0           = 8'h40;
+  localparam ADDR_ICV3           = 8'h43;
+  localparam ICV_WORDS           = 4;
+
+  localparam WSIZE               = 32;
 
   localparam CORE_NAME0          = 32'h67636d2d; // "gcm-"
   localparam CORE_NAME1          = 32'h61657320; // "aes "
@@ -87,35 +96,43 @@ module gcm(
   //----------------------------------------------------------------
   // Registers including update variables and write enable.
   //----------------------------------------------------------------
-  reg init_reg;
-  reg init_new;
+  reg          init_reg;
+  reg          init_new;
 
-  reg next_reg;
-  reg next_new;
+  reg          next_reg;
+  reg          next_new;
 
-  reg encdec_reg;
-  reg encdec_new;
-  reg encdec_we;
+  reg          encdec_reg;
+  reg          encdec_new;
+  reg          encdec_we;
 
-  reg keylen_reg;
-  reg keylen_new;
-  reg keylen_we;
-
-  reg [1 : 0] icvlen_reg;
-  reg [1 : 0] icvlen_new;
-  reg         icvlen_we;
-
+  reg          valid_reg;
+  reg          ready_reg;
+  reg          icv_correct_reg;
 
   reg [31 : 0] block_reg [0 : 3];
   reg          block_we;
+  reg [1 : 0]  block_address;
+
+  reg          keylen_reg;
+  reg          keylen_new;
+  reg          keylen_we;
 
   reg [31 : 0] key_reg [0 : 7];
   reg          key_we;
+  reg [2 : 0]  key_address;
 
-  reg [127 : 0] icv_reg;
+  reg [1 : 0]  icvlen_reg;
+  reg [1 : 0]  icvlen_new;
+  reg          icvlen_we;
 
-  reg           valid_reg;
-  reg           ready_reg;
+  reg [31 : 0] nonce_reg [0 : 3];
+  reg          nonce_we;
+  reg [1 : 0]  nonce_address;
+
+  reg [31 : 0] icv_reg [0 : 3];
+  reg          icv_we;
+  reg [1 : 0]  icv_address;
 
 
   //----------------------------------------------------------------
@@ -126,15 +143,17 @@ module gcm(
 
   wire           core_encdec;
   wire           core_ready;
-  wire [127 : 0] core_block;
+
+  wire [127 : 0] core_block_in;
+  wire [127 : 0] core_block_out;
+
+  wire [127 : 0] core_icv_in;
+  wire [127 : 0] core_icv_out;
+
   wire [255 : 0] core_key;
   wire           core_keylen;
   wire [127 : 0] core_result;
   wire           core_valid;
-
-  reg [1 : 0]    block_address;
-  reg [1 : 0]    icv_address;
-  reg [2 : 0]    key_address;
 
   reg            config_we;
 
@@ -144,35 +163,32 @@ module gcm(
   assign read_data = tmp_read_data;
   assign error     = tmp_error;
 
-  assign core_block  = {block_reg[0], block_reg[1], block_reg[2], block_reg[3]};
+  assign core_block_in = {block_reg[0], block_reg[1], block_reg[2], block_reg[3]};
   assign core_key    = {key_reg[0], key_reg[1], key_reg[2], key_reg[3],
                         key_reg[4], key_reg[5], key_reg[6], key_reg[7]};
-  assign core_init   = init_reg;
-  assign core_next   = next_reg;
-  assign core_encdec = encdec_reg;
-  assign core_keylen = keylen_reg;
 
 
   //----------------------------------------------------------------
   // GCM core instantiation.
   //----------------------------------------------------------------
-//  gcm_core core(
-//                .clk(clk),
-//                .reset_n(reset_n),
-//
-//                .encdec(core_encdec),
-//                .init(core_init),
-//                .next(core_next),
-//                .ready(core_ready),
-//
-//                .key(core_key),
-//                .keylen(core_keylen),
-//
-//                .block(core_block),
-//                .result(core_result),
-//                .result_valid(core_valid)
-//               );
-//
+  gcm_core core(
+                .clk(clk),
+                .reset_n(reset_n),
+                .key(core_key),
+                .init(init_reg),
+                .next(next_reg),
+                .enc_dec(encdec_reg),
+                .key_size(kelen_reg),
+                .icv_size(icvlen_reg),
+                .ready(core_ready),
+                .valid(core_redy),
+                .icv_correct(core_icv_correct),
+                .block_in(core_block_in),
+                .block_out(core_block_out),
+                .icv_in(core_icv_in),
+                .icv_out(core_icv_out)
+               );
+
 
   //----------------------------------------------------------------
   // reg_update
@@ -188,7 +204,11 @@ module gcm(
       if (!reset_n)
         begin
           for (i = 0 ; i < 4 ; i = i + 1)
-            block_reg[i] <= 32'h0;
+            begin
+              block_reg[i] <= 32'h0;
+              nonce_reg[i] <= 32'h0;
+              icv_reg[i] <= 32'h0;
+            end
 
           for (i = 0 ; i < 8 ; i = i + 1)
             key_reg[i] <= 32'h0;
@@ -198,16 +218,15 @@ module gcm(
           encdec_reg <= 0;
           keylen_reg <= 0;
           icvlen_reg <= 2'h0;
-          icv_reg    <= 128'h0;
           valid_reg  <= 0;
           ready_reg  <= 0;
         end
       else
         begin
-          ready_reg  <= core_ready;
-          valid_reg  <= core_valid;
-          init_reg   <= init_new;
-          next_reg   <= next_new;
+          ready_reg <= core_ready;
+          valid_reg <= core_valid;
+          init_reg  <= init_new;
+          next_reg  <= next_new;
 
           if (config_we)
             begin
@@ -221,6 +240,12 @@ module gcm(
 
           if (key_we)
             key_reg[key_address] <= write_data;
+
+          if (nonce_we)
+            key_reg[nonce_address] <= write_data;
+
+          if (icv_we)
+            key_reg[icv_address] <= write_data;
         end
     end // reg_update
 
@@ -237,11 +262,15 @@ module gcm(
       config_we      = 0;
       key_we         = 0;
       block_we       = 0;
+      nonce_we       = 0;
+      icv_we         = 0;
       tmp_read_data  = 32'h0;
       tmp_error      = 0;
 
-      key_address    = 3'h0;
-      block_address  = 2'h0;
+      key_address    = address[2 : 0];
+      block_address  = address[1 : 0];
+      nonce_address  = address[1 : 0];
+      icv_address    = address[1 : 0];
 
       if (cs)
         begin
@@ -253,14 +282,20 @@ module gcm(
                     next_new = write_data[CTRL_NEXT_BIT];
                   end
 
+              if (address == ADDR_CONFIG)
+                config_we = 1;
+
               if ((address >= ADDR_KEY0) && (address <= ADDR_KEY7))
                 key_we = 1;
 
               if ((address >= ADDR_BLOCK0) && (address <= ADDR_BLOCK3))
                 block_we = 1;
 
-              if (address == ADDR_CONFIG)
-                config_we = 1;
+              if ((address >= ADDR_NONCE0) && (address <= ADDR_NONCE3))
+                nonce_we = 1;
+
+              if ((address >= ADDR_ICV0) && (address <= ADDR_ICV3))
+                icv_we = 1;
             end // if (we)
 
           else
@@ -280,7 +315,20 @@ module gcm(
               if (address == ADDR_STATUS)
                 tmp_read_data = {30'h0, valid_reg, ready_reg};
 
-              // digest_reg[(15 - (address - ADDR_DIGEST0)) * 32 +: 32];
+              if (address == ADDR_CONFIG)
+                tmp_read_data = {30'h0, valid_reg, ready_reg};
+
+              if ((address >= ADDR_KEY0) && (address <= ADDR_KEY7))
+                tmp_read_data = key_reg[key_address];
+
+              if ((address >= ADDR_BLOCK0) && (address <= ADDR_BLOCK3))
+                tmp_read_data = block_reg[block_address];
+
+              if ((address >= ADDR_NONCE0) && (address <= ADDR_NONCE3))
+                tmp_read_data = block_reg[nonce_address];
+
+              if ((address >= ADDR_ICV0) && (address <= ADDR_ICV3))
+                tmp_read_data = block_reg[icv_address];
             end
         end
     end // addr_decoder
