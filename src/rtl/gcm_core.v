@@ -63,16 +63,20 @@ module gcm_core(
   //----------------------------------------------------------------
   // Internal constant and parameter definitions.
   //----------------------------------------------------------------
-  localparam GCM_CTRL_IDLE = 3'h0;
-  localparam GCM_CTRL_INIT = 3'h1;
+  localparam CTRL_IDLE = 3'h0;
+  localparam CTRL_INIT = 3'h1;
 
 
   //----------------------------------------------------------------
   // Registers including update variables and write enable.
   //----------------------------------------------------------------
-  reg [2 : 0] gcm_ctrl_reg;
-  reg [2 : 0] gcm_ctrl_new;
-  reg         gcm_ctrl_we;
+  reg [127 : 0] ctr_reg;
+  reg [127 : 0] ctr_new;
+  reg           ctr_we;
+
+  reg [2 : 0]   gcm_ctrl_reg;
+  reg [2 : 0]   gcm_ctrl_new;
+  reg           gcm_ctrl_we;
 
 
   //----------------------------------------------------------------
@@ -89,6 +93,13 @@ module gcm_core(
   wire [127 : 0] aes_result;
   wire           aes_valid;
 
+  reg            ctr_init;
+  reg            ctr_next;
+
+  reg [127 : 0]  gmult_a;
+  reg [127 : 0]  gmult_b;
+  wire [127 : 0] gmult_result;
+
 
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
@@ -97,24 +108,31 @@ module gcm_core(
 
 
   //----------------------------------------------------------------
-  // AES core instantiation.
+  // Core instantiations.
   //----------------------------------------------------------------
-  aes_core core(
-                .clk(clk),
-                .reset_n(reset_n),
+  aes_core aes(
+               .clk(clk),
+               .reset_n(reset_n),
 
-                .encdec(aes_encdec),
-                .init(aes_init),
-                .next(aes_next),
-                .ready(aes_ready),
+               .encdec(aes_encdec),
+               .init(aes_init),
+               .next(aes_next),
+               .ready(aes_ready),
 
-                .key(aes_key),
-                .keylen(aes_keylen),
+               .key(aes_key),
+               .keylen(aes_keylen),
 
-                .block(aes_block),
-                .result(aes_result),
-                .result_valid(aes_valid)
-               );
+               .block(aes_block),
+               .result(aes_result),
+               .result_valid(aes_valid)
+              );
+
+
+  gcm_gmult gmult(
+                  .a(gmult_a),
+                  .b(gmult_b),
+                  .res(gmult_result)
+                 );
 
 
   //----------------------------------------------------------------
@@ -130,10 +148,14 @@ module gcm_core(
 
       if (!reset_n)
         begin
-          gcm_ctrl_reg <= GCM_CTRL_IDLE;
+          ctr_reg      <= 64'h0;
+          gcm_ctrl_reg <= CTRL_IDLE;
         end
       else
         begin
+          if (ctr_we)
+            ctr_reg <= ctr_new;
+
           if (gcm_ctrl_we)
             gcm_ctrl_reg <= gcm_ctrl_new;
 
@@ -142,11 +164,44 @@ module gcm_core(
 
 
   //----------------------------------------------------------------
+  // ctr_logic
+  //----------------------------------------------------------------
+  always @*
+    begin : ctr_logic
+      ctr_new = 128'h0;
+      ctr_we  = 0;
+
+      if (ctr_init)
+        begin
+          ctr_new = nonce;
+          ctr_we  = 1;
+        end
+
+      if (ctr_next)
+        begin
+          ctr_new = {ctr_reg[127 : 64], ctr_reg[63 : 0] + 1'b1};
+          ctr_we  = 1;
+        end
+    end // ctr_logic
+
+
+  //----------------------------------------------------------------
   // gcm_core_ctrl_fsm
   //----------------------------------------------------------------
   always @*
     begin : gcm_core_ctrl_fsm
+      ctr_init = 0;
+      ctr_next = 0;
 
+      gcm_ctrl_new = CTRL_IDLE;
+      gcm_ctrl_we  = 1;
+
+      case (gcm_ctrl_reg)
+        CTRL_IDLE:
+          begin
+          end
+
+      endcase // case (gcm_ctrl_reg)
     end // gcm_core_ctrl_fsm
 
 endmodule // gcm_core
