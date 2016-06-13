@@ -104,6 +104,9 @@ module gcm_core(
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
   //----------------------------------------------------------------
+  // We will only use the AES core for encryption. We hardwire
+  // the operation. This will allow the synthesis tool to remove
+  // the decryption datapath.
   assign aes_encdec = 1;
 
 
@@ -190,15 +193,25 @@ module gcm_core(
   //----------------------------------------------------------------
   always @*
     begin : gcm_core_ctrl_fsm
-      ctr_init = 0;
-      ctr_next = 0;
-
+      ctr_init     = 0;
+      ctr_next     = 0;
       gcm_ctrl_new = CTRL_IDLE;
-      gcm_ctrl_we  = 1;
+      gcm_ctrl_we  = 0;
 
       case (gcm_ctrl_reg)
         CTRL_IDLE:
           begin
+            if (init)
+              begin
+                gcm_ctrl_new = CTRL_INIT;
+                gcm_ctrl_we  = 1;
+              end
+          end
+
+        CTRL_INIT:
+          begin
+            gcm_ctrl_new = CTRL_IDLE;
+            gcm_ctrl_we  = 1;
           end
 
       endcase // case (gcm_ctrl_reg)
