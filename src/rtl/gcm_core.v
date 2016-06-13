@@ -96,6 +96,8 @@ module gcm_core(
   reg            ctr_init;
   reg            ctr_next;
 
+  reg            gmult_next;
+  wire           gmult_ready;
   reg [127 : 0]  gmult_a;
   reg [127 : 0]  gmult_b;
   wire [127 : 0] gmult_result;
@@ -132,6 +134,12 @@ module gcm_core(
 
 
   gcm_gmult gmult(
+                  .clk(clk),
+                  .reset_n(reset_n),
+
+                  .next(gmult_next),
+                  .ready(gmult_ready),
+
                   .a(gmult_a),
                   .b(gmult_b),
                   .res(gmult_result)

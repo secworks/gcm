@@ -37,11 +37,16 @@
 //======================================================================
 
 module gcm_gmult(
+                 input wire            clk,
+                 input wire            reset_n,
+
+                 input wire            next,
+                 output wire           ready,
+
                  input wire [127 : 0]  a,
                  input wire [127 : 0]  b,
                  output wire [127 : 0] res
                 );
-
 
   //----------------------------------------------------------------
   // Gaolis multiplication functions.
@@ -83,8 +88,39 @@ module gcm_gmult(
   endfunction // gm8
 
   //----------------------------------------------------------------
+  // Registers.
   //----------------------------------------------------------------
+
+  //----------------------------------------------------------------
+  // Wires.
+  //----------------------------------------------------------------
+
+  //----------------------------------------------------------------
+  // Concurrent assignments.
+  //----------------------------------------------------------------
+  assign ready = 1'h1;
   assign res = a * b;
+
+
+
+  //----------------------------------------------------------------
+  // reg_update
+  //
+  // Update functionality for all registers in the core.
+  // All registers are positive edge triggered with synchronous
+  // active low reset.
+  //----------------------------------------------------------------
+  always @ (posedge clk)
+    begin : reg_update
+      integer i;
+
+      if (!reset_n)
+        begin
+        end
+      else
+        begin
+        end
+    end // reg_update
 
 endmodule // gcm_gmult
 
