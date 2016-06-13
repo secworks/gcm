@@ -26,3 +26,17 @@ control path.
 
 There is a testbench for the top level to at least allow us to build
 from the top level. The build system also supports linting.
+
+
+
+## References ##
+
+Recommendation for Block Cipher Modes of Operation: Galois/Counter Mode
+(GCM) and GMAC
+http://csrc.nist.gov/publications/nistpubs/800-38D/SP-800-38D.pdf
+
+The Galois/Counter Mode of Operation (GCM):
+http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
+
+MACsecGCM-AESTestVectors.
+http://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf
