@@ -49,6 +49,15 @@ module gcm_gmult(
                 );
 
   //----------------------------------------------------------------
+  // Defines.
+  //----------------------------------------------------------------
+  localparam CTRL_IDLE = 2'h0;
+  localparam CTRL_INIT = 2'h1;
+  localparam CTRL_CTR  = 2'h2;
+  localparam CTRL_DONE = 2'h3;
+
+
+  //----------------------------------------------------------------
   // Gaolis multiplication functions.
   //----------------------------------------------------------------
   function [7 : 0] gm2(input [7 : 0] op);
@@ -90,6 +99,17 @@ module gcm_gmult(
   //----------------------------------------------------------------
   // Registers.
   //----------------------------------------------------------------
+  reg           ready_reg;
+  reg           ready_new;
+
+  reg [127 : 0] res_reg;
+  reg [127 : 0] res_new;
+  reg           res_we;
+
+  reg [1 : 0]   gmult_ctrl_reg;
+  reg [1 : 0]   gmult_ctrl_new;
+  reg           gmult_ctrl_we;
+
 
   //----------------------------------------------------------------
   // Wires.
@@ -98,9 +118,8 @@ module gcm_gmult(
   //----------------------------------------------------------------
   // Concurrent assignments.
   //----------------------------------------------------------------
-  assign ready = 1'h1;
-  assign res = a * b;
-
+  assign ready = ready_reg;
+  assign res   = res_reg;
 
 
   //----------------------------------------------------------------
@@ -112,15 +131,74 @@ module gcm_gmult(
   //----------------------------------------------------------------
   always @ (posedge clk)
     begin : reg_update
-      integer i;
-
       if (!reset_n)
         begin
+          ready_reg <= 0;
+          res_reg   <= 128'h0;
         end
       else
         begin
+          ready_reg <= ready_new;
+
+          if (res_we)
+            res_reg <= res_new;
+
+          if (gmult_ctrl_we)
+            gmult_ctrl_reg <= gmult_ctrl_new;
         end
     end // reg_update
+
+
+  //----------------------------------------------------------------
+  // gmult_dp
+  //----------------------------------------------------------------
+  always @*
+    begin : gmult_dp
+      res_we = 0;
+      res_new = 128'h0;
+
+    end // gmult_dp
+
+
+  //----------------------------------------------------------------
+  // gmult_ctrl
+  //----------------------------------------------------------------
+  always @*
+    begin : gmult_ctrl
+      ready_new     = 0;
+      gmult_ctrl_new = CTRL_IDLE;
+      gmult_ctrl_we  = 0;
+
+      case (gmult_ctrl_reg)
+        CTRL_IDLE:
+          begin
+            ready_new = 1;
+            if (next)
+              begin
+                gmult_ctrl_new = CTRL_INIT;
+                gmult_ctrl_we  = 1;
+              end
+          end
+
+        CTRL_INIT:
+          begin
+            gmult_ctrl_new = CTRL_IDLE;
+            gmult_ctrl_we  = 1;
+          end
+
+        CTRL_CTR:
+          begin
+          end
+
+        CTRL_DONE:
+          begin
+          end
+
+        default:
+          begin
+          end
+      endcase // case (gmult_ctrl_reg)
+    end // gmult_ctrl
 
 endmodule // gcm_gmult
 
