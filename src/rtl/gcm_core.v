@@ -45,8 +45,8 @@ module gcm_core(
                 input wire            done,
 
                 input wire            enc_dec,
-                input wire            key_size,
-                input wire [1 : 0]    tag_size,
+                input wire            keylen,
+                input wire [1 : 0]    taglen,
 
                 output wire           ready,
                 output wire           valid,
@@ -82,15 +82,10 @@ module gcm_core(
   //----------------------------------------------------------------
   // Wires.
   //----------------------------------------------------------------
-  reg [31 : 0]   tmp_read_data;
-  reg            tmp_error;
-
+  reg            aes_init;
+  reg            aes_next;
   wire           aes_encdec;
   wire           aes_ready;
-  wire [127 : 0] aes_block;
-  wire [255 : 0] aes_key;
-  wire           aes_keylen;
-  wire [127 : 0] aes_result;
   wire           aes_valid;
 
   reg            ctr_init;
@@ -124,11 +119,11 @@ module gcm_core(
                .next(aes_next),
                .ready(aes_ready),
 
-               .key(aes_key),
-               .keylen(aes_keylen),
+               .key(key),
+               .keylen(keylen),
 
-               .block(aes_block),
-               .result(aes_result),
+               .block(block_in),
+               .result(block_out),
                .result_valid(aes_valid)
               );
 
@@ -201,6 +196,8 @@ module gcm_core(
   //----------------------------------------------------------------
   always @*
     begin : gcm_core_ctrl_fsm
+      aes_init     = 0;
+      aes_next     = 0;
       ctr_init     = 0;
       ctr_next     = 0;
       gcm_ctrl_new = CTRL_IDLE;
@@ -222,6 +219,9 @@ module gcm_core(
             gcm_ctrl_we  = 1;
           end
 
+        default:
+          begin
+          end
       endcase // case (gcm_ctrl_reg)
     end // gcm_core_ctrl_fsm
 

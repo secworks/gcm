@@ -143,10 +143,11 @@ module gcm(
   // Wires.
   //----------------------------------------------------------------
   reg [31 : 0]   tmp_read_data;
-  reg            tmp_error;
 
-  wire           core_encdec;
+  reg            core_encdec;
   wire           core_ready;
+  wire           core_valid;
+  wire           core_tag_correct;
 
   wire [127 : 0] core_block_in;
   wire [127 : 0] core_block_out;
@@ -158,7 +159,6 @@ module gcm(
   wire [127 : 0] core_nonce;
   wire           core_keylen;
   wire [127 : 0] core_result;
-  wire           core_valid;
 
   reg            config_we;
 
@@ -167,7 +167,6 @@ module gcm(
   // Concurrent connectivity for ports etc.
   //----------------------------------------------------------------
   assign read_data = tmp_read_data;
-  assign error     = tmp_error;
 
   assign core_block_in = {block_reg[0], block_reg[1], block_reg[2], block_reg[3]};
   assign core_key    = {key_reg[0], key_reg[1], key_reg[2], key_reg[3],
@@ -186,11 +185,11 @@ module gcm(
                 .done(done_reg),
 
                 .enc_dec(encdec_reg),
-                .key_size(kelen_reg),
-                .tag_size(taglen_reg),
+                .keylen(keylen_reg),
+                .taglen(taglen_reg),
 
                 .ready(core_ready),
-                .valid(core_redy),
+                .valid(core_valid),
                 .tag_correct(core_tag_correct),
 
                 .key(core_key),
@@ -249,6 +248,15 @@ module gcm(
               taglen_reg <= write_data[CONFIG_TAGLEN_END : CONFIG_TAGLEN_START];
             end
 
+          if (keylen_we)
+            keylen_reg <= keylen_new;
+
+          if (taglen_we)
+            taglen_reg <= taglen_new;
+
+          if (encdec_we)
+            encdec_reg <= encdec_new;
+
           if (block_we)
             block_reg[block_address] <= write_data;
 
@@ -279,8 +287,13 @@ module gcm(
       block_we       = 0;
       nonce_we       = 0;
       tag_we         = 0;
+      keylen_new     = 0;
+      keylen_we      = 0;
+      taglen_new     = 0;
+      taglen_we      = 0;
+      encdec_new     = 0;
+      encdec_we      = 0;
       tmp_read_data  = 32'h0;
-      tmp_error      = 0;
 
       key_address    = address[2 : 0];
       block_address  = address[1 : 0];
