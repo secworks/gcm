@@ -39,7 +39,7 @@
 module gcm_gmult(
                  input wire            clk,
                  input wire            reset_n,
-                 input wire [127 : 0]  opa,
+                 input wire [127 : 0]  op,
                  output wire [127 : 0] res
                 );
 
