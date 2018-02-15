@@ -39,48 +39,55 @@
 AES_SRC=../../aes/src/rtl/aes_core.v ../../aes/src/rtl/aes_decipher_block.v ../../aes/src/rtl/aes_encipher_block.v ../../aes/src/rtl/aes_inv_sbox.v ../../aes/src/rtl/aes_key_mem.v ../../aes/src/rtl/aes_sbox.v
 
 CORE_SRC=../src/rtl/gcm_core.v ../src/rtl/gcm_gmult.v $(AES_SRC)
+CORE_TB_SRC=../src/tb/tb_gcm_core.v
 
 TOP_SRC=../src/rtl/gcm.v $(CORE_SRC)
 TOP_TB_SRC=../src/tb/tb_gcm.v
 
 CC=iverilog
+CC_FLAGS= -Wall
+
 LINT=verilator
+LINT_FLAGS = +1364-2001ext+ --lint-only -Wall -Wno-fatal -Wno-DECLFILENAME
 
 
-all: top.sim
+all: top.sim core.sim
 
 
-top.sim: $(TOP_TB_SRC) $(TOP_SRC)
-	$(CC) -o top.sim $(TOP_TB_SRC) $(TOP_SRC)
+top.sim:	$(TOP_TB_SRC) $(TOP_SRC)
+		$(CC) $(CC_FLAGS) -o top.sim $(TOP_TB_SRC) $(TOP_SRC)
 
 
-sim-top: top.sim
-	./top.sim
+core.sim:	$(CORE_TB_SRC) $(CORE_SRC)
+		$(CC) $(CC_FLAGS) -o core.sim $(CORE_SRC) $(CORE_TB_SRC)
 
 
-lint:
-	verilator --lint-only  -Wall -Wno-fatal -Wno-DECLFILENAME $(TOP_SRC)
+sim-top: 	top.sim
+		./top.sim
 
 
-debug:
-	@echo "No debug available."
+sim-core: 	core.sim
+		./core.sim
+
+
+lint: $(TOP_SRC)
+	$(LINT) $(LINT_FLAGS) $(TOP_SRC)
 
 
 clean:
 	rm -f top.sim
+	rm -f core.sim
 
 
 help:
 	@echo "Supported targets:"
 	@echo "------------------"
 	@echo "all:      Build all simulation targets."
-	@echo "wb:       Build the Wishbone simulation target."
 	@echo "top:      Build the top simulation target."
 	@echo "core:     Build the core simulation target."
 	@echo "sim-top:  Run top level simulation."
 	@echo "sim-core: Run core level simulation."
 	@echo "lint:     Run the linter on both the block based and the stream based top levels."
-	@echo "debug:    Print the internal varibles."
 	@echo "clean:    Delete all built files."
 
 #===================================================================
