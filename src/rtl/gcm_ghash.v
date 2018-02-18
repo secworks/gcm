@@ -1,12 +1,12 @@
 //======================================================================
 //
-// gcm_gmult.v
+// gcm_ghash.v
 // -----------
-// Galois Multiplies for the GCM core.
+// GHASH module for the GCM core.
 //
 //
 // Author: Joachim Strombergson
-// Copyright (c) 2016, Secworks Sweden AB
+// Copyright (c) 2018, Secworks Sweden AB
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or
@@ -36,11 +36,17 @@
 //
 //======================================================================
 
-module gcm_gmult(
+module gcm_ghash(
                  input wire            clk,
                  input wire            reset_n,
-                 input wire [127 : 0]  op,
-                 output wire [127 : 0] res
+
+                 input wire            init,
+                 input wire            next,
+
+                 input wire [127 : 0]  h0,
+                 input wire [127 : 0]  x,
+                 output wire [127 : 0] y,
+                 output wire           ready
                 );
 
 
@@ -106,7 +112,7 @@ module gcm_gmult(
   //----------------------------------------------------------------
   // Concurrent connectivity for ports etc.
   //----------------------------------------------------------------
-  assign res = res_reg;
+  assign y = res_reg;
 
 
   //----------------------------------------------------------------
@@ -148,5 +154,5 @@ module gcm_gmult(
 endmodule // gcm_gmult
 
 //======================================================================
-// EOF gcm_gmult.v
+// EOF gcm_ghash.v
 //======================================================================

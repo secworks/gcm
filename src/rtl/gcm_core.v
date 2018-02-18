@@ -91,11 +91,12 @@ module gcm_core(
   reg            ctr_init;
   reg            ctr_next;
 
-  reg            gmult_next;
-  wire           gmult_ready;
-  reg [127 : 0]  gmult_a;
-  reg [127 : 0]  gmult_b;
-  wire [127 : 0] gmult_result;
+  reg            ghash_init;
+  reg            ghash_next;
+  wire           ghash_ready;
+  reg [127 : 0]  ghash_h0;
+  reg [127 : 0]  ghash_x;
+  wire [127 : 0] ghash_y;
 
 
   //----------------------------------------------------------------
@@ -128,16 +129,17 @@ module gcm_core(
               );
 
 
-  gcm_gmult gmult(
+  gcm_ghash ghash(
                   .clk(clk),
                   .reset_n(reset_n),
 
-                  .next(gmult_next),
-                  .ready(gmult_ready),
+                  .init(ghash_init),
+                  .next(ghash_next),
+                  .ready(ghash_ready),
 
-                  .a(gmult_a),
-                  .b(gmult_b),
-                  .res(gmult_result)
+                  .h0(ghash_h0),
+                  .x(ghash_x),
+                  .y(ghash_y)
                  );
 
 
