@@ -36,22 +36,25 @@
 #
 #===================================================================
 
-AES_SRC=../../aes/src/rtl/aes_core.v ../../aes/src/rtl/aes_decipher_block.v ../../aes/src/rtl/aes_encipher_block.v ../../aes/src/rtl/aes_inv_sbox.v ../../aes/src/rtl/aes_key_mem.v ../../aes/src/rtl/aes_sbox.v
+AES_SRC = ../../aes/src/rtl/aes_core.v ../../aes/src/rtl/aes_decipher_block.v ../../aes/src/rtl/aes_encipher_block.v ../../aes/src/rtl/aes_inv_sbox.v ../../aes/src/rtl/aes_key_mem.v ../../aes/src/rtl/aes_sbox.v
 
-CORE_SRC=../src/rtl/gcm_core.v ../src/rtl/gcm_gmult.v $(AES_SRC)
-CORE_TB_SRC=../src/tb/tb_gcm_core.v
+GHASH_SRC = ../src/rtl/gcm_ghash.v
+GHASH_TB_SRC = ../src/tb/tb_gcm_ghash.v
 
-TOP_SRC=../src/rtl/gcm.v $(CORE_SRC)
-TOP_TB_SRC=../src/tb/tb_gcm.v
+CORE_SRC = ../src/rtl/gcm_core.v $(AES_SRC) $(GHASH_SRC)
+CORE_TB_SRC = ../src/tb/tb_gcm_core.v
 
-CC=iverilog
-CC_FLAGS= -Wall
+TOP_SRC = ../src/rtl/gcm.v $(CORE_SRC)
+TOP_TB_SRC = ../src/tb/tb_gcm.v
 
-LINT=verilator
+CC = iverilog
+CC_FLAGS = -Wall
+
+LINT = verilator
 LINT_FLAGS = +1364-2001ext+ --lint-only -Wall -Wno-fatal -Wno-DECLFILENAME
 
 
-all: top.sim core.sim
+all: top.sim core.sim ghash.sim
 
 
 top.sim:	$(TOP_TB_SRC) $(TOP_SRC)
@@ -60,6 +63,9 @@ top.sim:	$(TOP_TB_SRC) $(TOP_SRC)
 
 core.sim:	$(CORE_TB_SRC) $(CORE_SRC)
 		$(CC) $(CC_FLAGS) -o core.sim $(CORE_SRC) $(CORE_TB_SRC)
+
+ghash.sim:	$(GHASH_TB_SRC) $(GHASH_SRC)
+		$(CC) $(CC_FLAGS) -o core.sim $(GHASH_SRC) $(GHASH_TB_SRC)
 
 
 sim-top: 	top.sim
@@ -70,24 +76,29 @@ sim-core: 	core.sim
 		./core.sim
 
 
+sim-ghash: 	ghash.sim
+		./ghash.sim
+
+
 lint: $(TOP_SRC)
 	$(LINT) $(LINT_FLAGS) $(TOP_SRC)
 
 
 clean:
-	rm -f top.sim
-	rm -f core.sim
+	rm -f *.sim
 
 
 help:
 	@echo "Supported targets:"
 	@echo "------------------"
-	@echo "all:      Build all simulation targets."
-	@echo "top:      Build the top simulation target."
-	@echo "core:     Build the core simulation target."
-	@echo "sim-top:  Run top level simulation."
-	@echo "sim-core: Run core level simulation."
-	@echo "lint:     Run the linter on both the block based and the stream based top levels."
+	@echo "all:       Build all simulation targets."
+	@echo "top.sim:   Build the top simulation target."
+	@echo "core.sim:  Build the core simulation target."
+	@echo "ghash.sim: Build the core simulation target."
+	@echo "sim-top:   Run top level simulation."
+	@echo "sim-core:  Run core level simulation."
+	@echo "sim-ghash: Run core level simulation."
+	@echo "lint:      Run the linter on the source."
 	@echo "clean:    Delete all built files."
 
 #===================================================================
