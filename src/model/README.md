@@ -4,7 +4,7 @@ This is a small, standalone reference implementation (model) of GHASH
 as specified in [NIST SP 800-38D
 (GCM)](https://csrc.nist.gov/pubs/sp/800/38/d/final). The reference
 model is extracted from the gcm implementation in the [Nettle
-cryptographic library](https://www.lysator.liu.se/~nisse/nettle/)
+cryptographic library](https://www.lysator.liu.se/~nisse/nettle/).
 
 The purpose of the model is to drive the HW implementation by
 generating testvectors that the testbench can read and execute.
@@ -13,13 +13,13 @@ generating testvectors that the testbench can read and execute.
 The code is extracted from GNU Nettle's `gcm.c` with `GCM_TABLE_BITS == 0`.
 
 `nettle_ghash_ref()` computes raw GHASH state `Y` with implicit zero padding for
-a final partial block, matching Nettle's internal `gcm_hash()` behavior.
+a final partial block, matching Nettle's internal `gcm_hash()` behaviour.
 
 
 ## License
 The top level test driver 'test_nettle_ghash_ref.c' as well as the
 header file is licensed under the rest of the GCM project. The
-reference implementation exctracted from Nettle is licensed under the
+reference implementation extracted from Nettle is licensed under the
 same license as the Nettle library:
 
 ```
